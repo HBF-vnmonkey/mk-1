@@ -1,0 +1,154 @@
+<!DOCTYPE html lang="zh-CN">
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全国城市空气质量实时监测大屏</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- ECharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+</head>
+<body>
+
+    <!-- ─── 顶部标题栏 ─── -->
+    <header class="header">
+        <div class="header-left">
+            <span class="header-date" id="dataDate">数据加载中...</span>
+        </div>
+        <h1 class="header-title">全国城市空气质量实时监测大屏</h1>
+        <div class="header-right">
+            <span class="header-source">数据来源：和鲸社区</span>
+        </div>
+    </header>
+
+    <!-- ─── 核心指标卡片（4个）──── -->
+    <section class="kpi-section">
+        <div class="kpi-card">
+            <div class="kpi-icon">📊</div>
+            <div class="kpi-info">
+                <div class="kpi-value" id="kpiAvgAqi">--</div>
+                <div class="kpi-label">全国平均 AQI</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">✅</div>
+            <div class="kpi-info">
+                <div class="kpi-value" id="kpiGoodRatio">--%</div>
+                <div class="kpi-label">优良城市占比</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">🌬️</div>
+            <div class="kpi-info">
+                <div class="kpi-value" id="kpiPm25">--</div>
+                <div class="kpi-label">平均 PM2.5</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">🏙️</div>
+            <div class="kpi-info">
+                <div class="kpi-value" id="kpiPollutedCities">--</div>
+                <div class="kpi-label">污染城市数</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">📈</div>
+            <div class="kpi-info">
+                <div class="kpi-value" id="kpiCities">--</div>
+                <div class="kpi-label">监测城市数</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">🏆</div>
+            <div class="kpi-info">
+                <div class="kpi-value kpi-best" id="kpiBestCity">--</div>
+                <div class="kpi-label">最优城市</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">📉</div>
+            <div class="kpi-info">
+                <div class="kpi-value kpi-worst" id="kpiWorstCity">--</div>
+                <div class="kpi-label">最差城市</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── 交互筛选栏 ─── -->
+    <div class="filter-bar">
+        <div class="filter-item">
+            <label class="filter-label">省份筛选</label><div class="filter-control">
+                <select id="provinceFilter">
+                    <option value="">全部省份</option><option value="华北">华北</option><option value="东北">东北</option><option value="华东">华东</option><option value="华中">华中</option><option value="华南">华南</option><option value="西南">西南</option><option value="西北">西北</option><option value="其他">其他</option></select></div></div><div class="filter-item">
+        <label class="filter-label">污染物类型</label><div class="filter-control">
+            <select id="pollutantFilter">
+                <option value="">全部污染物</option><option value="PM2.5">PM2.5</option><option value="PM10">PM10</option><option value="SO₂">SO₂</option><option value="NO₂">NO₂</option><option value="CO">CO</option><option value="O₃">O₃</option></select></div></div><div class="filter-item">
+        <label class="filter-label">城市排名</label><div class="filter-control">
+            <button id="rankToggle" class="filter-btn btn-active">最差城市</button><button id="rankToggleOther" class="filter-btn">最优城市</button></div></div></div><!-- ─── 图表区域（5行布局）──── -->
+    <main class="chart-section">
+
+        <!-- 第二行：省份AQI排名 + 空气质量等级分布 -->
+        <div class="chart-row">
+            <div class="chart-box chart-box-full">
+                <div class="chart-title">省份 AQI 排名 Top 15</div>
+                <div class="chart-body" id="chartProvinceRanking"></div>
+            </div>
+            <div class="chart-box chart-box-full">
+                <div class="chart-title">空气质量等级分布</div>
+                <div class="chart-body" id="chartQualityDist"></div>
+            </div>
+        </div>
+
+        <!-- 第三行：首要污染物分布 + 污染物浓度对比 -->
+        <div class="chart-row">
+            <div class="chart-box chart-box-full">
+                <div class="chart-title">首要污染物分布</div>
+                <div class="chart-body" id="chartPollutantDist"></div>
+            </div>
+            <div class="chart-box chart-box-full">
+                <div class="chart-title">污染物浓度对比</div>
+                <div class="chart-body" id="chartPollutantsAverage"></div>
+            </div>
+        </div>
+
+        <!-- 第四行：区域×污染物对比（分组柱状图） -->
+        <div class="chart-row chart-row-full">
+            <div class="chart-box chart-box-full">
+                <div class="chart-title">区域 × 污染物对比（分组柱状图）</div>
+                <div class="chart-body" id="chartRegionComparison"></div>
+            </div>
+        </div>
+
+        <!-- 第五行：城市排名Top10（垂直柱状图，最差+最优切换） -->
+        <div class="chart-row chart-row-full">
+            <div class="chart-box chart-box-full">
+                <div class="chart-title">城市排名 Top 10（垂直柱状图）</div>
+                <div class="chart-body" id="chartWorstBestCities"></div>
+            </div>
+        </div>
+
+        <!-- 第六行：污染最重 + 空气最优 Top 10 -->
+        <div class="chart-row">
+            <div class="chart-box chart-box-full">
+                <div class="chart-title">污染最重 Top 10 城市</div>
+                <div class="chart-body" id="chartWorstCities"></div>
+            </div>
+            <div class="chart-box chart-box-full">
+                <div class="chart-title">空气最优 Top 10 城市</div>
+                <div class="chart-body" id="chartBestCities"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ─── 底部信息栏 ─── -->
+    <footer class="footer">
+        <span>数据日期：<span id="footerDate">--</span></span>
+        <span>共监测 <span id="footerCities">--</span> 个城市</span>
+        <span>全国平均 PM2.5：<span id="footerPm25">--</span> μg/m³</span>
+        <span class="footer-disclaimer">本系统使用真实监测数据，仅供课程学习和答辩展示使用</span>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
